@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
@@ -17,6 +19,13 @@ func HandleValidationErrors(err error) gin.H {
 				errors[e.Field()] = e.Field() + "phải là UUID hợp lệ"
 			case "slug":
 				errors[e.Field()] = e.Field() + "chỉ chứa chữ thường , số gạch đầu dòng "
+			case "min_int":
+				errors[e.Field()] = fmt.Sprintf("%s phải có giá trị nhỏ hơn %s", e.Field(), e.Param())
+			case "max_int":
+				errors[e.Field()] = fmt.Sprintf("%s phải có giá trị lớn hơn %s", e.Field(), e.Param())
+			case "file_ext":
+				// allowedValues := strings.Join(strings.Split(e.Param(), " "), ",")
+				errors[e.Field()] = fmt.Sprintf("%s chỉ có phép những file có ")
 			}
 
 		}

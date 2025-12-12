@@ -2,8 +2,10 @@ package utils
 
 import (
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
@@ -84,5 +86,44 @@ func RegisterValidators() error {
 		return slugRegex.MatchString(fl.FieldName())
 	})
 
+	v.RegisterValidation("min_int", func(fl validator.FieldLevel) bool {
+		minStr := fl.Param()
+		minVal, err := strconv.ParseInt(minStr, 10, 64)
+		if err != nil {
+			return false
+		}
+
+		return fl.Field().Int() >= minVal
+	})
+
+	v.RegisterValidation("max_int", func(fl validator.FieldLevel) bool {
+		maxStr := fl.Param()
+		minVal, err := strconv.ParseInt(maxStr, 10, 64)
+		if err != nil {
+			return false
+		}
+
+		return fl.Field().Int() >= minVal
+	})
+
+	v.RegisterValidation("file_ext", func(fl validator.FieldLevel) bool {
+		filename := fl.Field().String()
+
+		allowedStr := fl.Param()
+		if allowedStr == "" {
+			return false
+		}
+
+		allowedExt := strings.Fields(allowedStr)
+		ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(filename)), ".")
+
+		for _, allowed := range allowedExt {
+			if ext == strings.ToLower(allowed) {
+				return true
+			}
+		}
+
+		return false
+	})
 	return nil
 }
