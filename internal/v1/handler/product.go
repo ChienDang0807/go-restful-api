@@ -1,11 +1,13 @@
 package v1handler
 
 import (
+	"fmt"
 	"net/http"
 	"regexp"
 
 	"github.com/ChienDang0807/go-restful-api-gin/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 var slugRegex = regexp.MustCompile(`^[a-z0-9]+(?:[-.])*$`)
@@ -91,7 +93,17 @@ func (u *ProductHandler) PostProductsV1(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, utils.HandleValidationErrors(err))
 		return
 	}
+	for key := range params.ProductInfo {
+		if _, err := uuid.Parse(key); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"errors": gin.H{
+					"product_info": fmt.Sprintf("Key '%s' trong product_info không phải là UUUID hợp lệ", key),
+				},
+			})
 
+			return
+		}
+	}
 	if params.Display == nil {
 		defaultDisplay := true
 		params.Display = &defaultDisplay

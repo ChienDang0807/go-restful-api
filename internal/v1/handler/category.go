@@ -44,3 +44,17 @@ func (c *CategoryHandler) GetCategoryByCategoryV1(ctx *gin.Context) {
 		"username": value,
 	})
 }
+
+func (c *CategoryHandler) PostCategoriesV1(ctx *gin.Context) {
+	var params PostCategoriesV1Param
+	if err := ctx.ShouldBind(&params); err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.HandleValidationErrors(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Post category (V1)",
+		"name":    params.Name,
+		"status":  params.Status,
+	})
+}
