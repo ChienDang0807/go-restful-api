@@ -51,6 +51,11 @@ func (n *NewHandler) PostNewsV1(ctx *gin.Context) {
 		return
 	}
 
+	if image.Size > 5<<20 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "File too large (5 MB) "})
+		return
+	}
+
 	err = os.MkdirAll("/uploads", os.ModePerm)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Cannot create upload folder"})
@@ -73,9 +78,79 @@ func (n *NewHandler) PostNewsV1(ctx *gin.Context) {
 }
 
 func (n *NewHandler) PostUploadFileNewsV1(ctx *gin.Context) {
+	var params PostNewsV1Param
+	if err := ctx.ShouldBind(&params); err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.HandleValidationErrors(err))
+		return
+	}
 
+	image, err := ctx.FormFile("image")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "File is required"})
+		return
+	}
+
+	filename, err := utils.ValidateAndSaveFile(image, "./uploads")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Post news (V1)",
+		"title":   params.Title,
+		"status":  params.Status,
+		"image":   image.Filename,
+		"path":    "./upload/" + filename,
+	})
 }
 
 func (n *NewHandler) PostUploadMultipleFileNewsV1(ctx *gin.Context) {
+	const publicURL = "http://localhost:8080/images/"
+	var params PostNewsV1Param
+	if err := ctx.ShouldBind(&params); err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.HandleValidationErrors(err))
+		return
+	}
 
+	form, err := ctx.MultipartForm()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid multipart form"})
+		return
+	}
+
+	images := form.File["images"]
+	if len(images) == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "No file provided"})
+		return
+	}
+
+	var successFiles []string
+	var failFiles []map[string]string
+	for _, image := range images {
+		fileName, err := utils.ValidateAndSaveFile(image, "./uploads")
+		if err != nil {
+			failFiles = append(failFiles, map[string]string{
+				"filename": image.Filename,
+				"error":    err.Error(),
+			})
+			continue
+		}
+		publicImageURL := publicURL + fileName
+		successFiles = append(successFiles, publicImageURL)
+	}
+
+	resp := gin.H{
+		"message":       "Post news (V1)",
+		"title":         params.Title,
+		"status":        params.Status,
+		"success_files": successFiles,
+	}
+
+	if len(failFiles) > 0 {
+		resp["message"] = "Upload completed with partial errors"
+		resp["error_files"] = failFiles
+	}
+
+	ctx.JSON(http.StatusOK, resp)
 }
