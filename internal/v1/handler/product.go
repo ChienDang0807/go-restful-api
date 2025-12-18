@@ -16,7 +16,7 @@ type ProductHandler struct {
 }
 
 type GetProductsBySlugV1Param struct {
-	Slug string `uri:"slug" biding:"slug"`
+	Slug string `uri:"slug" biding:"slug,min=5,max=5"`
 }
 
 type GetProductsV1Param struct {
@@ -50,6 +50,7 @@ type PostProductsV1Param struct {
 	ProductAttribute []ProductAttribute     `json:"product_attribute" binding:"required,gt=0,dive"`
 	ProductInfo      map[string]ProductInfo `json:"product_info" binding:"required,gt=0,dive"`
 	ProductMetadata  map[string]any         `json:"product_metadata" binding:"omitempty"`
+	Slug             string                 `uri:"slug" binding:"slug,min=5,max=5"`
 }
 
 func NewProductHandler() *ProductHandler {
